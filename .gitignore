@@ -1,0 +1,4 @@
+debug_audio.bin
+__pycache__/
+*.pyc
+.DS_Store
