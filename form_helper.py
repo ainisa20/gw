@@ -16,12 +16,36 @@ import wx
 import wx.html2
 
 IS_MACOS = platform.system() == "Darwin"
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DIFY_BASE_URL = "http://47.239.24.30:8889"
-DIFY_TOKEN = "app-jplqCEqKkX9dQPH2AobwAXOu"
+CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
+
+# 默认配置
+DEFAULT_CONFIG = {
+    "difyApi": "http://47.239.24.30:8889",
+    "difyToken": "app-jplqCEqKkX9dQPH2AobwAXOu",
+    "formUrl": "https://amr.sz.gov.cn/xxgk/qt/ztlm/opcfwzq/index.html?f_link_type=f_linkinlinenote&flow_extra=eyJpbmxpbmVfZGlzcGxheV9wb3NpdGlvbiI6MCwiZG9jX3Bvc2l0aW9uIjowLCJkb2NfaWQiOiIxMDUyYmVmZGRkMTFiMjFiLTBiNWJhZjk4ZmYxZmFmMGEifQ%3D%3D"
+}
+
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                # 只保留非空的配置
+                return {
+                    "difyApi": cfg.get("difyApi") or DEFAULT_CONFIG["difyApi"],
+                    "difyToken": cfg.get("difyToken") or DEFAULT_CONFIG["difyToken"],
+                    "formUrl": cfg.get("formUrl") or DEFAULT_CONFIG["formUrl"]
+                }
+        except Exception as e:
+            print(f"[config] load error: {e}")
+    return DEFAULT_CONFIG.copy()
+
+_config = load_config()
+DIFY_BASE_URL = _config["difyApi"]
+DIFY_TOKEN = _config["difyToken"]
+FORM_URL = _config["formUrl"]
 USER_ID = str(uuid.uuid4())
-FORM_URL = "https://amr.sz.gov.cn/xxgk/qt/ztlm/opcfwzq/index.html?f_link_type=f_linkinlinenote&flow_extra=eyJpbmxpbmVfZGlzcGxheV9wb3NpdGlvbiI6MCwiZG9jX3Bvc2l0aW9uIjowLCJkb2NfaWQiOiIxMDUyYmVmZGRkMTFiMjFiLTBiNWJhZjk4ZmYxZmFmMGEifQ%3D%3D"
 
 
 def find_free_port():
@@ -32,6 +56,17 @@ def find_free_port():
 
 class ChatHandler(BaseHTTPRequestHandler):
     chat_html = ""
+
+    def do_POST(self):
+        if self.path.startswith("/api/"):
+            api_path = self.path[5:]
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            print(f"[proxy] POST /{api_path} ({content_length} bytes)")
+            self._proxy_request("POST", api_path, body)
+        else:
+            self.send_response(404)
+            self.end_headers()
 
     def do_GET(self):
         if self.path == "/" or self.path == "/chat":
@@ -49,22 +84,6 @@ class ChatHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-    def do_POST(self):
-        if self.path.startswith("/api/"):
-            api_path = self.path[5:]
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length)
-            print(f"[proxy] POST /{api_path} ({content_length} bytes)")
-            if "audio" in api_path:
-                dbg_path = os.path.join(SCRIPT_DIR, "debug_audio.bin")
-                with open(dbg_path, "wb") as f:
-                    f.write(body)
-                print(f"[proxy] saved audio to {dbg_path}")
-            self._proxy_request("POST", api_path, body)
-        else:
-            self.send_response(404)
-            self.end_headers()
-
     def do_OPTIONS(self):
         self.send_response(204)
         self._send_cors()
@@ -73,12 +92,17 @@ class ChatHandler(BaseHTTPRequestHandler):
     def _proxy_request(self, method, path, body):
         url = DIFY_BASE_URL + "/" + path
         print(f"[proxy] -> {method} {url}")
-        print(f"[proxy] headers: Content-Type={self.headers.get('Content-Type')}")
+        print(f"[proxy] request Content-Type: {self.headers.get('Content-Type')}")
+        
         req = UrllibRequest(url, data=body, method=method)
         req.add_header("Authorization", "Bearer " + DIFY_TOKEN)
+        
         ct = self.headers.get("Content-Type")
         if ct:
             req.add_header("Content-Type", ct)
+        else:
+            req.add_header("Content-Type", "application/json")
+        
         try:
             resp = urlopen(req, timeout=300)
             status = resp.status

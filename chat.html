@@ -126,12 +126,16 @@ body{
 }
 #welcome h2{color:var(--text);font-size:20px}
 #welcome p{font-size:14px;max-width:300px;line-height:1.6}
+
+
 </style>
 </head>
 <body>
 <div class="floating-actions">
   <button id="screenshot-btn" class="floating-btn screenshot-btn" onclick="triggerScreenshot()">截图求助</button>
 </div>
+
+
 
 <div id="messages">
   <div id="welcome">
@@ -177,6 +181,8 @@ function log(tag, msg) {
 }
 
 log("init", "proxy=" + USE_PROXY + ", base=" + BASE_URL);
+
+window.currentFormUrl = "";
 
 inputEl.addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
@@ -254,11 +260,18 @@ function simpleMarkdown(text) {
 }
 
 async function apiFetch(path, options) {
-  var url = BASE_URL + "/" + path;
-  if (USE_PROXY) url = "/api/" + path;
+  var url = "/api/" + path;
+  var token = TOKEN;
+
   log("fetch", url);
   try {
-    var resp = await fetch(url, options);
+    var resp = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        "Authorization": "Bearer " + token
+      }
+    });
     log("fetch", resp.status + " " + resp.statusText);
     return resp;
   } catch (e) {
@@ -269,20 +282,28 @@ async function apiFetch(path, options) {
 
 async function uploadFile(file) {
   log("upload", file.name + " " + file.type + " " + file.size + " bytes");
-  var formData = new FormData();
-  formData.append("file", file);
-  formData.append("user", USER);
-  var resp = await apiFetch("v1/files/upload", {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + TOKEN },
-    body: formData,
-  });
-  var result = await resp.json();
-  log("upload", JSON.stringify(result));
-  if (!resp.ok || !result.id) {
-    throw new Error("上传失败: " + (result.message || resp.status));
+  try {
+    var formData = new FormData();
+    formData.append("file", file);
+    formData.append("user", USER);
+    
+    log("upload", "calling apiFetch v1/files/upload");
+    var resp = await apiFetch("v1/files/upload", {
+      method: "POST",
+      body: formData,
+    });
+    
+    log("upload", "response status: " + resp.status);
+    var result = await resp.json();
+    log("upload", JSON.stringify(result));
+    if (!resp.ok || !result.id) {
+      throw new Error("上传失败: " + (result.message || resp.status));
+    }
+    return result;
+  } catch (e) {
+    log("upload", "ERROR: " + e.message);
+    throw e;
   }
-  return result;
 }
 
 async function processStream(body, onMessage, onEnd, onError) {
@@ -371,7 +392,6 @@ async function send() {
     var resp = await apiFetch("v1/chat-messages", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + TOKEN,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -433,6 +453,10 @@ function toggleVoice() {
 
 async function startRecording() {
   try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("您的浏览器不支持语音输入功能。\n\n请使用支持麦克风的现代浏览器，或检查是否在打包应用的限制环境中。");
+      return;
+    }
     var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     var source = audioCtx.createMediaStreamSource(stream);
@@ -467,8 +491,12 @@ async function startRecording() {
     btnVoice.textContent = "⏹";
     log("voice", "recording started");
   } catch (e) {
-    log("voice", "getUserMedia error: " + e.message);
-    alert("无法访问麦克风: " + e.message);
+    log("voice", "getUserMedia error: " + e.name);
+    if (e.name === "NotAllowedError") {
+      alert("无法访问麦克风，请确保：\n\n1. macOS: 系统偏好设置 → 安全性与隐私 → 隐私 → 麦克风 → 允许本应用\n2. Windows: Windows 设置 → 隐私 → 麦克风 → 允许应用访问");
+    } else {
+      alert("语音输入失败: " + e.message + "\n\n请检查：\n1. 应用是否有麦克风权限\n2. 浏览器是否支持 getUserMedia\n3. 是否在打包环境中运行（WKWebView 限制）");
+    }
   }
 }
 
@@ -514,7 +542,6 @@ async function audioToText(audioBlob) {
     formData.append("user", USER);
     var resp = await apiFetch("v1/audio-to-text", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + TOKEN },
       body: formData,
     });
     var result = await resp.json();
@@ -579,8 +606,9 @@ async function sendScreenshotHelp(fileId, dataUrl) {
   var fullAnswer = "";
 
   try {
+    var query = "识别这是表单的哪个页面（如：个人基本信息、申请信息、材料清单等），然后获取该页面的完整填写说明和注意事项。";
     var body = {
-      query: "请看这个表单页面的截图，帮我分析每个字段该如何填写，需要什么材料或信息。",
+      query: query,
       response_mode: "streaming",
       user: USER,
       inputs: {},
@@ -592,7 +620,6 @@ async function sendScreenshotHelp(fileId, dataUrl) {
     var resp = await apiFetch("v1/chat-messages", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + TOKEN,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
