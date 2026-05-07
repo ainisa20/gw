@@ -2,22 +2,18 @@
 
 ## 快速开始
 
-### 方式一：运行打包好的应用（推荐）
-
-**macOS:**
+### macOS
 ```bash
-open dist/FormHelper.app
+./start.sh
 ```
+或双击 `start_form_helper.command`
 
-**Windows:**
-```cmd
-dist\FormHelper.exe
-```
+### Windows
+双击 `start.bat`
 
-### 方式二：源码运行
-
+### 依赖安装
 ```bash
-python3 form_helper.py
+pip3 install wxPython
 ```
 
 ## 功能说明
@@ -41,27 +37,14 @@ python3 form_helper.py
 
 **注意**：首次使用会请求屏幕录制权限，需要允许。
 
-## 打包指南
+## 配置
 
-### macOS
-```bash
-./build_macos.sh
-```
-生成：`dist/FormHelper.app`
+编辑 `form_helper.py` 顶部的配置项：
+- `DIFY_API_BASE`：Dify API 地址
+- `DIFY_API_KEY`：API 密钥
+- `DEFAULT_URL`：右侧默认加载的网页地址
 
-### Windows
-```cmd
-build_windows.bat
-```
-生成：`dist\FormHelper.exe`
-
-## 自定义图标
-
-将图标文件放入 `assets/` 目录：
-- macOS: `icon.icns`
-- Windows: `icon.ico`
-
-详细说明见 `assets/README.md`
+修改后重新启动应用即可生效。
 
 ## 技术栈
 
@@ -72,14 +55,9 @@ build_windows.bat
 
 ## 常见问题
 
-### macOS：应用无法打开
-```bash
-xattr -cr dist/FormHelper.app
-```
-
-### Windows：缺少 DLL
-安装 [Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe)
-
 ### 截图失败
 - 确保已授予屏幕录制权限
 - 确保窗口未被遮挡
+
+### Windows：缺少 DLL
+安装 [Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe)
