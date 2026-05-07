@@ -53,6 +53,36 @@ body{
   padding:12px 16px;background:var(--surface);
   border-top:1px solid var(--border);
 }
+.floating-actions{
+  position:fixed;right:16px;top:50%;
+  transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:12px;
+  z-index:100;
+}
+.floating-btn{
+  width:48px;height:120px;border-radius:12px;
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+  transition:all 0.2s;
+  writing-mode:vertical-rl;text-orientation:upright;
+  letter-spacing:3px;
+}
+.screenshot-btn{
+  background:linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  color:#fff;font-size:13px;font-weight:600;
+}
+.screenshot-btn:hover{
+  transform:translateX(-4px);
+  box-shadow:0 6px 20px rgba(233,69,96,0.5);
+}
+.screenshot-btn:active{
+  transform:translateX(-2px);
+}
+.screenshot-btn:disabled{
+  opacity:0.5;cursor:not-allowed;
+  transform:none;
+}
 #image-preview{
   display:flex;gap:8px;padding-bottom:8px;flex-wrap:wrap;
 }
@@ -96,24 +126,12 @@ body{
 }
 #welcome h2{color:var(--text);font-size:20px}
 #welcome p{font-size:14px;max-width:300px;line-height:1.6}
-
-#log-panel{
-  position:fixed;top:0;right:0;width:300px;height:100px;
-  background:rgba(0,0,0,0.85);color:#0f0;font-size:11px;
-  padding:6px;overflow-y:auto;z-index:9999;display:none;
-  font-family:monospace;
-}
-#log-panel.show{display:block}
-#log-toggle{
-  position:fixed;top:4px;right:4px;z-index:10000;
-  background:rgba(0,0,0,0.5);color:#fff;border:none;
-  padding:2px 8px;font-size:10px;cursor:pointer;border-radius:4px;
-}
 </style>
 </head>
 <body>
-<button id="log-toggle" onclick="document.getElementById('log-panel').classList.toggle('show')">日志</button>
-<div id="log-panel"></div>
+<div class="floating-actions">
+  <button id="screenshot-btn" class="floating-btn screenshot-btn" onclick="triggerScreenshot()">截图求助</button>
+</div>
 
 <div id="messages">
   <div id="welcome">
@@ -152,16 +170,10 @@ var btnImage = document.getElementById("btn-image");
 var fileInput = document.getElementById("file-input");
 var imagePreview = document.getElementById("image-preview");
 var welcomeEl = document.getElementById("welcome");
-var logPanel = document.getElementById("log-panel");
 
 function log(tag, msg) {
   var time = new Date().toLocaleTimeString();
-  var line = "[" + time + "] " + tag + " " + msg;
-  console.log(line);
-  if (logPanel) {
-    logPanel.textContent += line + "\n";
-    logPanel.scrollTop = logPanel.scrollHeight;
-  }
+  console.log("[" + time + "] " + tag + " " + msg);
 }
 
 log("init", "proxy=" + USE_PROXY + ", base=" + BASE_URL);
@@ -553,6 +565,66 @@ function removeImage(btn) {
     pendingFiles.splice(idx, 1);
   }
   btn.parentElement.remove();
+}
+
+async function sendScreenshotHelp(fileId, dataUrl) {
+  if (isStreaming) return;
+  removeWelcome();
+
+  addMessage("user", '<i style="color:var(--text-dim)">📷 右侧页面截图</i><br><img src="' + dataUrl + '" style="max-width:100%;border-radius:8px;margin-top:4px">', true);
+
+  isStreaming = true;
+  btnSend.disabled = true;
+  var aiMsg = addTyping();
+  var fullAnswer = "";
+
+  try {
+    var body = {
+      query: "请看这个表单页面的截图，帮我分析每个字段该如何填写，需要什么材料或信息。",
+      response_mode: "streaming",
+      user: USER,
+      inputs: {},
+      files: [{ type: "image", transfer_method: "local_file", upload_file_id: fileId }]
+    };
+    if (conversationId) body.conversation_id = conversationId;
+    log("screenshot", JSON.stringify(body));
+
+    var resp = await apiFetch("v1/chat-messages", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + TOKEN,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!resp.ok) {
+      var errBody = await resp.text();
+      log("screenshot", "error: " + errBody);
+      throw new Error("HTTP " + resp.status + ": " + errBody);
+    }
+
+    aiMsg.innerHTML = "";
+    fullAnswer = "";
+
+    await processStream(resp.body,
+      function(answer) {
+        fullAnswer += answer;
+        aiMsg.innerHTML = simpleMarkdown(fullAnswer);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      },
+      function() {},
+      function(msg) {
+        fullAnswer += "<br><span style='color:#e94560'>错误: " + msg + "</span>";
+        aiMsg.innerHTML = simpleMarkdown(fullAnswer);
+      }
+    );
+  } catch (error) {
+    aiMsg.innerHTML = simpleMarkdown("<span style='color:#e94560'>截图求助失败: " + error.message + "</span>");
+  }
+
+  isStreaming = false;
+  btnSend.disabled = false;
 }
 </script>
 </body>

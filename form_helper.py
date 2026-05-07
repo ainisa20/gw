@@ -4,11 +4,18 @@ import json
 import socket
 import threading
 import uuid
+import subprocess
+import base64
+import tempfile
+import platform
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.request import Request as UrllibRequest, urlopen
 from urllib.error import URLError
+from io import BytesIO
 import wx
 import wx.html2
+
+IS_MACOS = platform.system() == "Darwin"
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DIFY_BASE_URL = "http://47.239.24.30:8889"
@@ -164,6 +171,8 @@ class FormHelper(wx.Frame):
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.left = wx.html2.WebView.New(self)
+        self.left.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.on_left_loaded)
+        self.left.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.on_left_navigating)
         self.left.LoadURL(chat_url)
 
         resizer = wx.Panel(self, size=(6, -1))
@@ -198,6 +207,32 @@ class FormHelper(wx.Frame):
         if url:
             self.right.LoadURL(url)
 
+    def on_left_loaded(self, evt):
+        inject_js = """
+        (function() {
+            window.triggerScreenshot = function() {
+                var btn = document.getElementById('screenshot-btn');
+                if(btn) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                }
+                window.location.href = 'screenshot://trigger';
+            };
+        })();
+        """
+        self.left.RunScript(inject_js)
+        evt.Skip()
+
+    def on_left_navigating(self, evt):
+        url = evt.GetURL()
+        if url.startswith("screenshot://"):
+            evt.Veto()
+            if "trigger" in url:
+                wx.CallAfter(self.on_screenshot_help, None)
+        else:
+            evt.Skip()
+
     def on_resizer_down(self, evt):
         self.resizing = True
         self.resizer.CaptureMouse()
@@ -221,6 +256,87 @@ class FormHelper(wx.Frame):
             self.right.SetSize((total - new_left - 6, -1))
             self.Layout()
         evt.Skip()
+
+    def on_screenshot_help(self, evt):
+        try:
+            img_data = self._capture_right_panel()
+            print(f"[screenshot] captured {len(img_data)} bytes")
+            file_id = self._upload_to_dify(img_data)
+            print(f"[screenshot] uploaded, file_id={file_id}")
+            data_url = "data:image/jpeg;base64," + base64.b64encode(img_data).decode()
+            js = f"sendScreenshotHelp('{file_id}', '{data_url}')"
+            print(f"[screenshot] injecting JS ({len(js)} chars)")
+            self.left.RunScript(js)
+        except Exception as e:
+            print(f"[screenshot] ERROR: {e}")
+            try:
+                self.left.RunScript(
+                    "addMessage('ai','<span style=\"color:#e94560\">截图失败: "
+                    + str(e).replace("'", "\\'").replace('"', '\\"')
+                    + "</span>', true)"
+                )
+            except Exception:
+                pass
+        finally:
+            self.left.RunScript("""
+                (function() {
+                    var btn = document.getElementById('screenshot-btn');
+                    if(btn) {
+                        btn.disabled = false;
+                        btn.style.opacity = '';
+                        btn.style.cursor = '';
+                    }
+                })();
+            """)
+
+    def _capture_right_panel(self):
+        rect = self.right.GetScreenRect()
+        tmp = os.path.join(tempfile.gettempdir(), "form_helper_shot.jpg")
+        if IS_MACOS:
+            subprocess.run(
+                ["screencapture", "-R",
+                 f"{rect.x},{rect.y},{rect.width},{rect.height}", "-t", "jpg", tmp],
+                check=True, capture_output=True, timeout=5
+            )
+        else:
+            dc = wx.ScreenDC()
+            bmp = wx.Bitmap(rect.width, rect.height)
+            mem_dc = wx.MemoryDC(bmp)
+            mem_dc.Blit(0, 0, rect.width, rect.height, dc, rect.x, rect.y)
+            mem_dc.SelectObject(wx.NullBitmap)
+            img = bmp.ConvertToImage()
+            img.SetOption("quality", 70)
+            img.SaveFile(tmp, wx.BITMAP_TYPE_JPEG)
+        with open(tmp, "rb") as f:
+            data = f.read()
+        os.unlink(tmp)
+        return data
+
+    def _upload_to_dify(self, image_data):
+        boundary = "----FormHelperBoundary" + uuid.uuid4().hex[:8]
+        body = BytesIO()
+        body.write(f"--{boundary}\r\n".encode())
+        body.write(
+            b'Content-Disposition: form-data; name="file"; filename="screenshot.jpg"\r\n'
+            b"Content-Type: image/jpeg\r\n\r\n"
+        )
+        body.write(image_data)
+        body.write(f"\r\n--{boundary}\r\n".encode())
+        body.write(
+            b'Content-Disposition: form-data; name="user"\r\n\r\n'
+            + USER_ID.encode()
+            + f"\r\n--{boundary}--\r\n".encode()
+        )
+        url = DIFY_BASE_URL + "/v1/files/upload"
+        req = UrllibRequest(url, data=body.getvalue(), method="POST")
+        req.add_header("Authorization", "Bearer " + DIFY_TOKEN)
+        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+        resp = urlopen(req, timeout=15)
+        result = json.loads(resp.read().decode())
+        print(f"[upload] {result}")
+        if not result.get("id"):
+            raise Exception(result.get("message", "upload failed"))
+        return result["id"]
 
 
 if __name__ == "__main__":

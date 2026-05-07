@@ -1,4 +1,12 @@
-debug_audio.bin
-__pycache__/
+# 打包产物
+build/
+dist/
 *.pyc
+__pycache__/
+
+# 调试文件
+debug_audio.bin
 .DS_Store
+
+# PyInstaller
+*.spec
