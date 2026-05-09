@@ -15,6 +15,7 @@ from io import BytesIO
 import wx
 import wx.html2
 
+
 IS_MACOS = platform.system() == "Darwin"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
@@ -22,7 +23,7 @@ CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
 # 默认配置
 DEFAULT_CONFIG = {
     "difyApi": "http://47.239.24.30:8889",
-    "difyToken": "app-jplqCEqKkX9dQPH2AobwAXOu",
+    "difyToken": "app-I8L7ehbLS8iqCvFoa6w7nhhf",
     "formUrl": "https://amr.sz.gov.cn/xxgk/qt/ztlm/opcfwzq/index.html?f_link_type=f_linkinlinenote&flow_extra=eyJpbmxpbmVfZGlzcGxheV9wb3NpdGlvbiI6MCwiZG9jX3Bvc2l0aW9uIjowLCJkb2NfaWQiOiIxMDUyYmVmZGRkMTFiMjFiLTBiNWJhZjk4ZmYxZmFmMGEifQ%3D%3D"
 }
 
@@ -58,7 +59,11 @@ class ChatHandler(BaseHTTPRequestHandler):
     chat_html = ""
 
     def do_POST(self):
-        if self.path.startswith("/api/"):
+        if self.path == "/api/lookup-fragment":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            self._handle_lookup_fragment(body)
+        elif self.path.startswith("/api/"):
             api_path = self.path[5:]
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
@@ -76,6 +81,10 @@ class ChatHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(self.chat_html.encode("utf-8"))
+        elif self.path == "/api/catalog":
+            self._handle_get_catalog()
+        elif self.path.startswith("/ref-image?path="):
+            self._serve_ref_image()
         elif self.path.startswith("/chat."):
             self.send_response(200)
             self.end_headers()
@@ -92,8 +101,19 @@ class ChatHandler(BaseHTTPRequestHandler):
     def _proxy_request(self, method, path, body):
         url = DIFY_BASE_URL + "/" + path
         print(f"[proxy] -> {method} {url}")
-        print(f"[proxy] request Content-Type: {self.headers.get('Content-Type')}")
-        
+        ct = self.headers.get("Content-Type") or ""
+        print(f"[proxy] Content-Type: {ct}")
+
+        if "chat-messages" in path and "application/json" in ct:
+            try:
+                data = json.loads(body.decode('utf-8'))
+                print(f"[proxy] query: {data.get('query', '')[:500]}")
+                files = data.get('files', [])
+                print(f"[proxy] files: {json.dumps(files) if files else '无'}")
+                if data.get('conversation_id'):
+                    print(f"[proxy] conversation_id: {data['conversation_id']}")
+            except Exception:
+                pass
         req = UrllibRequest(url, data=body, method=method)
         req.add_header("Authorization", "Bearer " + DIFY_TOKEN)
         
@@ -153,6 +173,100 @@ class ChatHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
+
+    def _handle_get_catalog(self):
+        try:
+            from fragment_matcher import get_matcher
+            matcher = get_matcher()
+            catalog = matcher.build_catalog_text()
+            print(f"[catalog] 返回 {len(catalog)} chars")
+
+            self.send_response(200)
+            self._send_cors()
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(catalog.encode('utf-8'))
+        except Exception as e:
+            print(f"[catalog] ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_response(500)
+            self._send_cors()
+            self.end_headers()
+
+    def _handle_lookup_fragment(self, body):
+        try:
+            data = json.loads(body.decode('utf-8'))
+            fragment_id = data.get('id')
+            fragment_title = data.get('title')
+            print(f"[lookup] 查找: id={fragment_id}, title={fragment_title}")
+
+            from fragment_matcher import get_matcher
+            matcher = get_matcher()
+
+            fragment = None
+            if fragment_id:
+                fragment = matcher.find_by_id(int(fragment_id))
+            if not fragment and fragment_title:
+                fragment = matcher.find_by_title(fragment_title)
+
+            if fragment:
+                print(f"[lookup] 找到: ID={fragment['id']} {fragment['title']}")
+                self.send_response(200)
+                self._send_cors()
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps(
+                    {"success": True, "fragment": fragment},
+                    ensure_ascii=False
+                ).encode('utf-8'))
+            else:
+                print(f"[lookup] 未找到")
+                self.send_response(200)
+                self._send_cors()
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps(
+                    {"success": False, "error": "未找到匹配片段"},
+                    ensure_ascii=False
+                ).encode('utf-8'))
+        except Exception as e:
+            print(f"[lookup] ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            self.send_response(500)
+            self._send_cors()
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(
+                {"success": False, "error": str(e)},
+                ensure_ascii=False
+            ).encode('utf-8'))
+
+    def _serve_ref_image(self):
+        from urllib.parse import parse_qs, urlparse
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        rel_path = params.get('path', [''])[0]
+
+        if not rel_path or '..' in rel_path:
+            self.send_response(400)
+            self.end_headers()
+            return
+
+        img_path = os.path.join(SCRIPT_DIR, rel_path)
+        if not os.path.isfile(img_path):
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        self.send_response(200)
+        self._send_cors()
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Cache-Control", "public, max-age=86400")
+        self.end_headers()
+        with open(img_path, 'rb') as f:
+            self.wfile.write(f.read())
 
     def log_message(self, format, *args):
         pass

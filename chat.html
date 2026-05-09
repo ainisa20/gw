@@ -594,6 +594,32 @@ function removeImage(btn) {
   btn.parentElement.remove();
 }
 
+var _catalogCache = null;
+
+async function getCatalog() {
+  if (_catalogCache) return _catalogCache;
+  var resp = await fetch("/api/catalog");
+  _catalogCache = await resp.text();
+  return _catalogCache;
+}
+
+function buildRefCard(frag, reason) {
+  var h = '<div data-ref-card style="background:#16213e;border:1px solid #0f3460;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px">';
+  h += '<div style="color:#e94560;font-weight:600;margin-bottom:4px">📋 ' + (frag.step_label || '') + ' · ' + (frag.title || '') + '</div>';
+  if (reason) h += '<div style="color:var(--text-dim);font-size:12px;margin-bottom:6px">匹配依据: ' + reason + '</div>';
+  var imgs = frag.all_images || (frag.image_file ? [frag.image_file] : []);
+  if (imgs.length > 0) {
+    h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">';
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i]) h += '<img src="/ref-image?path=' + encodeURIComponent(imgs[i]) + '" style="height:80px;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="window.open(this.src,\'_blank\')" onerror="this.style.display=\'none\'">';
+    }
+    h += '</div>';
+  }
+  if (frag.tips) h += '<div style="color:#ff6b6b;font-size:12px;margin-top:6px;padding:6px 8px;background:rgba(233,69,96,0.1);border-radius:4px">⚠️ ' + frag.tips + '</div>';
+  h += '</div>';
+  return h;
+}
+
 async function sendScreenshotHelp(fileId, dataUrl) {
   if (isStreaming) return;
   removeWelcome();
@@ -606,23 +632,86 @@ async function sendScreenshotHelp(fileId, dataUrl) {
   var fullAnswer = "";
 
   try {
-    var query = "识别这是表单的哪个页面（如：个人基本信息、申请信息、材料清单等），然后获取该页面的完整填写说明和注意事项。";
-    var body = {
+    // ===== 调用1：分类 =====
+    var catalog = await getCatalog();
+
+    var classifyPrompt = "请分析这张截图，判断它属于以下哪个操作步骤。\n\n" +
+      "步骤分类目录：\n" + catalog + "\n" +
+      "请根据截图中的界面元素（标题、按钮、字段、选项等），判断当前截图最匹配哪个步骤。\n\n" +
+      "只返回JSON，不要其他文字：\n" +
+      '{"matched_id": 数字ID, "matched_title": "完整复制目录中的title", "confidence": 0.95, "reason": "判断依据"}\n\n' +
+      "无法判断时返回：{\"matched_id\": null, \"matched_title\": null, \"confidence\": 0, \"reason\": \"无法识别\"}";
+
+    log("screenshot", "调用1: 分类 (blocking)");
+    log("screenshot", "调用1 prompt: " + classifyPrompt);
+    var classifyResp = await apiFetch("v1/chat-messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: classifyPrompt,
+        response_mode: "blocking",
+        user: USER,
+        inputs: {},
+        files: [{ type: "image", transfer_method: "local_file", upload_file_id: fileId }]
+      })
+    });
+
+    var classifyJson = await classifyResp.json();
+    var classifyAnswer = classifyJson.answer || "";
+    log("screenshot", "分类原始返回: " + classifyAnswer.substring(0, 300));
+
+    // 解析分类结果
+    var matchData = null;
+    try {
+      var jm = classifyAnswer.match(/\{[\s\S]*\}/);
+      if (jm) matchData = JSON.parse(jm[0]);
+    } catch(e) {
+      log("screenshot", "JSON解析失败: " + e.message);
+    }
+
+    var contextInfo = "";
+    var reason = "";
+
+    if (matchData && matchData.matched_id) {
+      // 查找 fragment 详情
+      var lookupResp = await fetch("/api/lookup-fragment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: matchData.matched_id, title: matchData.matched_title })
+      });
+      var lookupResult = await lookupResp.json();
+      log("screenshot", "查找结果: " + JSON.stringify(lookupResult).substring(0, 200));
+
+      if (lookupResult.success && lookupResult.fragment) {
+        var frag = lookupResult.fragment;
+        reason = matchData.reason || "";
+
+        aiMsg.innerHTML = buildRefCard(frag, reason);
+
+        contextInfo = "\n\n【系统已自动匹配到以下参考信息】\n" +
+          "步骤: " + (frag.step_label || '') + "\n" +
+          "标题: " + (frag.title || '') + "\n" +
+          "所属分类: " + (frag.section || '') + "\n";
+        if (frag.tips) contextInfo += "⚠️ 注意事项: " + frag.tips + "\n";
+        contextInfo += "\n操作说明:\n" + (frag.context_text || '') + "\n";
+      }
+    }
+
+    // ===== 调用2：推理回答 =====
+    var query = "请根据截图内容，结合系统提供的参考信息，给出这个步骤的详细操作指导和注意事项。" + contextInfo;
+    var body2 = {
       query: query,
       response_mode: "streaming",
       user: USER,
       inputs: {},
       files: [{ type: "image", transfer_method: "local_file", upload_file_id: fileId }]
     };
-    if (conversationId) body.conversation_id = conversationId;
-    log("screenshot", JSON.stringify(body));
-
+    log("screenshot", "调用2 prompt: " + query);
+    log("screenshot", "调用2: 推理回答 (streaming)");
     var resp = await apiFetch("v1/chat-messages", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body2),
     });
 
     if (!resp.ok) {
@@ -631,13 +720,14 @@ async function sendScreenshotHelp(fileId, dataUrl) {
       throw new Error("HTTP " + resp.status + ": " + errBody);
     }
 
-    aiMsg.innerHTML = "";
     fullAnswer = "";
 
     await processStream(resp.body,
       function(answer) {
         fullAnswer += answer;
-        aiMsg.innerHTML = simpleMarkdown(fullAnswer);
+        var cardEl = aiMsg.querySelector('[data-ref-card]');
+        var refCard = cardEl ? cardEl.outerHTML : "";
+        aiMsg.innerHTML = refCard + simpleMarkdown(fullAnswer);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       },
       function() {},
@@ -647,6 +737,7 @@ async function sendScreenshotHelp(fileId, dataUrl) {
       }
     );
   } catch (error) {
+    log("screenshot", "失败: " + error.message);
     aiMsg.innerHTML = simpleMarkdown("<span style='color:#e94560'>截图求助失败: " + error.message + "</span>");
   }
 
