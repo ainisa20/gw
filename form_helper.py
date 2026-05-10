@@ -297,14 +297,26 @@ class FormHelper(wx.Frame):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        url_bar = wx.BoxSizer(wx.HORIZONTAL)
+        nav_bar = wx.BoxSizer(wx.HORIZONTAL)
+        btn_back = wx.Button(self, label="←", size=(36, -1))
+        btn_forward = wx.Button(self, label="→", size=(36, -1))
+        btn_refresh = wx.Button(self, label="⟳", size=(36, -1))
+        btn_home = wx.Button(self, label="🏠", size=(36, -1))
+        btn_back.Bind(wx.EVT_BUTTON, self.on_back)
+        btn_forward.Bind(wx.EVT_BUTTON, self.on_forward)
+        btn_refresh.Bind(wx.EVT_BUTTON, self.on_refresh)
+        btn_home.Bind(wx.EVT_BUTTON, self.on_home)
         self.url_input = wx.TextCtrl(self, value=FORM_URL, style=wx.TE_PROCESS_ENTER)
         load_btn = wx.Button(self, label="加载")
         load_btn.Bind(wx.EVT_BUTTON, self.on_load)
         self.url_input.Bind(wx.EVT_TEXT_ENTER, lambda e: self.on_load())
-        url_bar.Add(self.url_input, 1, wx.ALL | wx.EXPAND, 4)
-        url_bar.Add(load_btn, 0, wx.ALL, 4)
-        main_sizer.Add(url_bar, 0, wx.EXPAND)
+        nav_bar.Add(btn_back, 0, wx.ALL, 2)
+        nav_bar.Add(btn_forward, 0, wx.ALL, 2)
+        nav_bar.Add(btn_refresh, 0, wx.ALL, 2)
+        nav_bar.Add(btn_home, 0, wx.ALL, 2)
+        nav_bar.Add(self.url_input, 1, wx.ALL | wx.EXPAND, 4)
+        nav_bar.Add(load_btn, 0, wx.ALL, 4)
+        main_sizer.Add(nav_bar, 0, wx.EXPAND)
 
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -344,6 +356,19 @@ class FormHelper(wx.Frame):
             url = "http://" + url
         if url:
             self.right.LoadURL(url)
+
+    def on_back(self, evt):
+        self.right.GoBack()
+
+    def on_forward(self, evt):
+        self.right.GoForward()
+
+    def on_refresh(self, evt):
+        self.right.Reload()
+
+    def on_home(self, evt):
+        self.url_input.SetValue(FORM_URL)
+        self.right.LoadURL(FORM_URL)
 
     def on_left_loaded(self, evt):
         inject_js = """
