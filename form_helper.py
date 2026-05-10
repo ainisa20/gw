@@ -1,5 +1,6 @@
 import time
 import os
+import sys
 import json
 import socket
 import threading
@@ -17,8 +18,8 @@ import wx.html2
 
 
 IS_MACOS = platform.system() == "Darwin"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
+SCRIPT_DIR = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
 # 默认配置
 DEFAULT_CONFIG = {

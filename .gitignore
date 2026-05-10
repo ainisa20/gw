@@ -13,3 +13,6 @@ config.json
 build/
 dist/
 *.spec
+dist/
+build/
+*.spec
