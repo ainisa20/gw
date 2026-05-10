@@ -1,0 +1,186 @@
+2026-05-10 13:15:23,512 [INFO] === 表单填写助手启动 ===
+2026-05-10 13:15:23,512 [INFO] Python: 3.13.12 | packaged by Anaconda, Inc. | (main, Feb 24 2026, 16:05:56) [MSC v.1942 64 bit (AMD64)]
+2026-05-10 13:15:23,549 [INFO] Platform: Windows-11-10.0.26200-SP0
+2026-05-10 13:15:23,549 [INFO] SCRIPT_DIR: C:\Users\bill\www\gw\dist\表单填写助手\_internal
+2026-05-10 13:15:23,549 [INFO] IS_MACOS: False
+2026-05-10 13:15:23,550 [INFO] wx version: 4.2.5
+2026-05-10 13:15:23,550 [INFO] DIFY_BASE_URL: http://47.239.24.30:8889
+2026-05-10 13:15:23,550 [INFO] FORM_URL: https://amr.sz.gov.cn/xxgk/qt/ztlm/opcfwzq/index.html?f_link_type=f_linkinlineno...
+2026-05-10 13:15:23,550 [INFO] Creating wx.App
+2026-05-10 13:15:23,552 [INFO] Initializing encrypted resources
+2026-05-10 13:15:23,583 [INFO] [init] fragment_matcher loaded (70 fragments)
+2026-05-10 13:15:23,583 [INFO] Creating FormHelper frame
+2026-05-10 13:15:23,588 [INFO] [init] HTTP port: 58891
+2026-05-10 13:15:23,617 [INFO] [server] chat.html loaded (26348 bytes)
+2026-05-10 13:15:23,617 [INFO] [server] Starting HTTP on http://127.0.0.1:58891
+2026-05-10 13:15:24,115 [INFO] [init] chat_url: http://127.0.0.1:58891
+2026-05-10 13:15:24,146 [INFO] [init] Creating left WebView with backend=b'wxWebViewEdge'
+2026-05-10 13:15:24,169 [INFO] [init] Left WebView created OK
+2026-05-10 13:15:24,172 [INFO] [init] Loading chat_url: http://127.0.0.1:58891
+2026-05-10 13:15:24,180 [INFO] [init] Creating right WebView
+2026-05-10 13:15:24,191 [INFO] [init] Right WebView created OK
+2026-05-10 13:15:24,199 [INFO] [init] Loading FORM_URL
+2026-05-10 13:15:24,204 [INFO] [init] Frame init complete
+2026-05-10 13:15:24,228 [INFO] Entering MainLoop
+2026-05-10 13:15:24,532 [INFO] [left] NAVIGATING: http://127.0.0.1:58891/
+2026-05-10 13:15:24,535 [INFO] [http] GET /
+2026-05-10 13:15:24,535 [INFO] [http] served chat.html (26348 bytes)
+2026-05-10 13:15:24,621 [INFO] [left] LOADED: http://127.0.0.1:58891/
+2026-05-10 13:15:24,625 [INFO] [left] RunScript inject OK
+2026-05-10 13:15:24,626 [INFO] [http] GET /favicon.ico
+2026-05-10 13:15:24,898 [INFO] [right] LOADED: https://amr.sz.gov.cn/xxgk/qt/ztlm/opcfwzq/index.html?f_link_type=f_linkinlinenote&flow_extra=eyJpbmxpbmVfZGlzcGxheV9wb3NpdGlvbiI6MCwiZG9jX3Bvc2l0aW9uIjowLCJkb2NfaWQiOiIxMDUyYmVmZWRkMTFiMjFiLTBiNWJhZjk4ZmYxZmFmMGEifQ%3D%3D
+2026-05-10 13:15:25,718 [INFO] [left] NAVIGATING: screenshot://trigger
+2026-05-10 13:15:25,725 [INFO] [screenshot] hwnd=3017698 rect=(644,88,969,792)
+2026-05-10 13:15:25,758 [INFO] [screenshot] PrintWindow ret=1
+2026-05-10 13:15:25,785 [INFO] [screenshot] captured 62707 bytes
+2026-05-10 13:15:26,292 [INFO] [upload] {'id': '991edfa5-006a-4665-a2ac-33fbb24474cf', 'name': 'screenshot.jpg', 'size': 62707, 'extension': 'jpg', 'mime_type': 'image/jpeg', 'created_by': '52880db9-576c-49af-9b5f-5cab976eaf50', 'created_at': 1778390109, 'preview_url': None, 'source_url': '/files/991edfa5-006a-4665-a2ac-33fbb24474cf/file-preview?timestamp=1778390109&nonce=fce07c624d0c7c3676652b55959c80d0&sign=wfQFdb1kvynV4n9BQxZH_qDKAoSLwWJ63nPhBuIREEc%3D', 'original_url': None, 'user_id': None, 'tenant_id': '1fd5438e-81d2-42fa-a8da-ae41dd430563', 'conversation_id': None, 'file_key': None}
+2026-05-10 13:15:26,292 [INFO] [screenshot] uploaded, file_id=991edfa5-006a-4665-a2ac-33fbb24474cf
+2026-05-10 13:15:26,293 [INFO] [screenshot] injecting JS (83697 chars)
+2026-05-10 13:15:26,312 [INFO] [http] GET /api/catalog
+2026-05-10 13:15:26,313 [INFO] [catalog] 返回 2415 chars
+2026-05-10 13:15:26,321 [INFO] [proxy] POST /v1/chat-messages (6011 bytes)
+2026-05-10 13:15:26,321 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/chat-messages
+2026-05-10 13:15:26,321 [INFO] [proxy] query: 请分析这张截图，判断它属于以下哪个操作步骤。
+
+步骤分类目录：
+【其他步骤】
+  1. 开办企业一窗通办事指南总览 (前言总览)
+
+【办理入口】
+  2. PC端官网入口-点击经营主体登记注册服务 (第1步 · 办理入口)
+  3. PC端官网入口-点击开办 (第2步 · 办理入口)
+  4. 选择开办业务办理并点击办理入口 (第3步 · 办理入口)
+  5. 点击办理入口按钮 (第4步 · 办理入口)
+
+【实名认证】
+  6. 实名认证-扫码登录 (第1步 · 实名认证)
+  7. 个人账号密码登录 (第2步 · 实名认证)
+  8. 新用户注册并登录 (第3步 · 实名认证)
+  9. 忘记账号密码找回-点击找回 (第4步 · 实名认证)
+  10. 忘记账号密码-选择验证方式 (第5步 · 实名认证)
+  42. 填报完成进入实名认证 (第1步 · 实名认证确认)
+  43. 人脸识别确认提交 (第2步 · 实名认证确认)
+  44. 进入实名认证-系统提示确认 (第3步 · 实名认证确认)
+  60. 电子营业执照APP下载二维码 (第3步 · 领取营业执照)
+  61. 印章
+2026-05-10 13:15:26,322 [INFO] [proxy] files: [{"type": "image", "transfer_method": "local_file", "upload_file_id": "991edfa5-006a-4665-a2ac-33fbb24474cf"}]
+2026-05-10 13:15:28,333 [INFO] [proxy] <- 200 streaming=False
+2026-05-10 13:15:28,334 [INFO] [proxy] <- body (1498 bytes)
+2026-05-10 13:15:28,341 [INFO] [lookup] id=1, title=开办企业一窗通办事指南总览 (前言总览)
+2026-05-10 13:15:28,342 [INFO] [lookup] found: ID=1
+2026-05-10 13:15:28,346 [INFO] [proxy] POST /v1/chat-messages (1631 bytes)
+2026-05-10 13:15:28,346 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/chat-messages
+2026-05-10 13:15:28,346 [INFO] [proxy] query: 请根据截图内容，结合系统提供的参考信息，给出这个步骤的详细操作指导和注意事项。
+
+【系统已自动匹配到以下参考信息】
+步骤: 前言总览
+标题: 开办企业一窗通办事指南总览
+所属分类: 
+
+操作说明:
+“开办企业一窗通”办事指南
+尊敬的企业家朋友们：
+深圳是一座充满魅力、活力、动力、创新力的国际化创
+新型城市，为进一步提升深圳的营商环境水平，为企业创业
+创新提供更好服务，深圳市市场监管局联合深圳市税务局、
+市公安局、市人力资源和社会保障局、市住房和建设局、人
+民银行深圳中心支行等部门升级了“开办企业一窗通”系统，
+选择“开办企业一窗通"可一次性填报申请营业执照、刻制
+印章、银行开户（签订三方协议）、申领发票、员工参保登
+记、公积金开户登记。市场监管部门0.5 个工作日内予以核
+准，后续刻制公章、申领发票、员工参保登记、公积金开户
+登记等在0.5 个工作日内一并办结,并可同时预约银行开户
+或在线签订三方协议扣缴税费社保费、托收公积金费用及水
+电气报装。
+欢迎您使用“开办企业一窗通”平台，通过此平台可同
+时申请免费刻制印章、领用发票，业务审批后，可在领取营
+业执照的同时免费获得一套企业印章。
+
+2026-05-10 13:15:28,347 [INFO] [proxy] files: [{"type": "image", "transfer_method": "local_file", "upload_file_id": "991edfa5-006a-4665-a2ac-33fbb24474cf"}]
+2026-05-10 13:15:28,452 [INFO] [proxy] <- 200 streaming=True
+2026-05-10 13:15:32,584 [INFO] [right] LOADED: https://amr.sz.gov.cn/xxgk/qt/ztlm/qykb/
+2026-05-10 13:15:36,248 [INFO] [proxy] stream complete
+2026-05-10 13:15:40,708 [INFO] [right] LOADED: https://amr.sz.gov.cn/psout/jsp/gcloud/pubservice/userstsso/godeal.jsp?code=pm02_hvEQLNZxREKXztL3UzdxlA&infoFlowId=69253616301007640593440300&ywlsh=
+2026-05-10 13:15:41,442 [INFO] [right] LOADED: https://amr.sz.gov.cn/aicmerout/jsp/gcloud/giapout/industry/aicmer/processpage/step_one.jsp?ywType=20
+2026-05-10 13:15:54,636 [INFO] [left] NAVIGATING: screenshot://trigger
+2026-05-10 13:15:54,636 [INFO] [screenshot] hwnd=3017698 rect=(618,56,1089,856)
+2026-05-10 13:15:54,662 [INFO] [screenshot] PrintWindow ret=1
+2026-05-10 13:15:54,687 [INFO] [screenshot] captured 107036 bytes
+2026-05-10 13:15:54,917 [INFO] [upload] {'id': '2cf7c2e3-4fc4-46e7-b422-8049ebe18c3f', 'name': 'screenshot.jpg', 'size': 107036, 'extension': 'jpg', 'mime_type': 'image/jpeg', 'created_by': '52880db9-576c-49af-9b5f-5cab976eaf50', 'created_at': 1778390138, 'preview_url': None, 'source_url': '/files/2cf7c2e3-4fc4-46e7-b422-8049ebe18c3f/file-preview?timestamp=1778390138&nonce=ad1ea7ae8defbbca687bcca6c40194f4&sign=XQqNGwZe5L3y90uAwqDujoOPkwg27gIPPnkl_Y_wvqM%3D', 'original_url': None, 'user_id': None, 'tenant_id': '1fd5438e-81d2-42fa-a8da-ae41dd430563', 'conversation_id': None, 'file_key': None}
+2026-05-10 13:15:54,918 [INFO] [screenshot] uploaded, file_id=2cf7c2e3-4fc4-46e7-b422-8049ebe18c3f
+2026-05-10 13:15:54,920 [INFO] [screenshot] injecting JS (142801 chars)
+2026-05-10 13:15:54,932 [INFO] [proxy] POST /v1/chat-messages (6011 bytes)
+2026-05-10 13:15:54,933 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/chat-messages
+2026-05-10 13:15:54,933 [INFO] [proxy] query: 请分析这张截图，判断它属于以下哪个操作步骤。
+
+步骤分类目录：
+【其他步骤】
+  1. 开办企业一窗通办事指南总览 (前言总览)
+
+【办理入口】
+  2. PC端官网入口-点击经营主体登记注册服务 (第1步 · 办理入口)
+  3. PC端官网入口-点击开办 (第2步 · 办理入口)
+  4. 选择开办业务办理并点击办理入口 (第3步 · 办理入口)
+  5. 点击办理入口按钮 (第4步 · 办理入口)
+
+【实名认证】
+  6. 实名认证-扫码登录 (第1步 · 实名认证)
+  7. 个人账号密码登录 (第2步 · 实名认证)
+  8. 新用户注册并登录 (第3步 · 实名认证)
+  9. 忘记账号密码找回-点击找回 (第4步 · 实名认证)
+  10. 忘记账号密码-选择验证方式 (第5步 · 实名认证)
+  42. 填报完成进入实名认证 (第1步 · 实名认证确认)
+  43. 人脸识别确认提交 (第2步 · 实名认证确认)
+  44. 进入实名认证-系统提示确认 (第3步 · 实名认证确认)
+  60. 电子营业执照APP下载二维码 (第3步 · 领取营业执照)
+  61. 印章
+2026-05-10 13:15:54,933 [INFO] [proxy] files: [{"type": "image", "transfer_method": "local_file", "upload_file_id": "2cf7c2e3-4fc4-46e7-b422-8049ebe18c3f"}]
+2026-05-10 13:15:57,254 [INFO] [proxy] <- 200 streaming=False
+2026-05-10 13:15:57,256 [INFO] [proxy] <- body (2222 bytes)
+2026-05-10 13:15:57,267 [INFO] [lookup] id=11, title=企业类型选择-使用其他企业名称申请 (第1步 · 名称自主申报)
+2026-05-10 13:15:57,268 [INFO] [lookup] found: ID=11
+2026-05-10 13:15:57,277 [INFO] [proxy] POST /v1/chat-messages (668 bytes)
+2026-05-10 13:15:57,277 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/chat-messages
+2026-05-10 13:15:57,277 [INFO] [proxy] query: 请根据截图内容，结合系统提供的参考信息，给出这个步骤的详细操作指导和注意事项。
+
+【系统已自动匹配到以下参考信息】
+步骤: 第1步 · 名称自主申报
+标题: 企业类型选择-使用其他企业名称申请
+所属分类: 名称自主申报
+
+操作说明:
+1. 企业类型选择
+第一步：点击【使用其他企业名称申请】申报
+第二步：根据实际情况选择内资公司，点击“确定”。
+
+2026-05-10 13:15:57,277 [INFO] [proxy] files: [{"type": "image", "transfer_method": "local_file", "upload_file_id": "2cf7c2e3-4fc4-46e7-b422-8049ebe18c3f"}]
+2026-05-10 13:15:57,399 [INFO] [proxy] <- 200 streaming=True
+2026-05-10 13:16:03,628 [INFO] [proxy] stream complete
+2026-05-10 13:16:03,631 [INFO] [http] GET /ref-image?path=page07%2Fimg_1.jpeg
+2026-05-10 13:16:39,700 [INFO] [proxy] POST /v1/files/upload (765145 bytes)
+2026-05-10 13:16:39,700 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/files/upload
+2026-05-10 13:16:40,134 [INFO] [proxy] <- 201 streaming=False
+2026-05-10 13:16:40,135 [INFO] [proxy] <- body (556 bytes)
+2026-05-10 13:16:40,145 [INFO] [proxy] POST /v1/chat-messages (258 bytes)
+2026-05-10 13:16:40,145 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/chat-messages
+2026-05-10 13:16:40,146 [INFO] [proxy] query: 提前文字
+2026-05-10 13:16:40,146 [INFO] [proxy] files: [{"type": "image", "transfer_method": "local_file", "upload_file_id": "0899898a-291e-4d8e-a888-240d2d3fcb51"}]
+2026-05-10 13:16:40,146 [INFO] [proxy] conversation_id: 85a24457-235f-4392-87c4-39525de6b37c
+2026-05-10 13:16:40,255 [INFO] [proxy] <- 200 streaming=True
+2026-05-10 13:16:44,248 [INFO] [proxy] stream complete
+2026-05-10 13:16:57,871 [INFO] [proxy] POST /v1/audio-to-text (254286 bytes)
+2026-05-10 13:16:57,871 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/audio-to-text
+2026-05-10 13:16:58,886 [INFO] [proxy] <- 200 streaming=False
+2026-05-10 13:16:58,887 [INFO] [proxy] <- body (12 bytes)
+2026-05-10 13:17:22,420 [INFO] [proxy] POST /v1/audio-to-text (401742 bytes)
+2026-05-10 13:17:22,421 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/audio-to-text
+2026-05-10 13:17:23,577 [INFO] [proxy] <- 200 streaming=False
+2026-05-10 13:17:23,578 [INFO] [proxy] <- body (36 bytes)
+2026-05-10 13:17:26,727 [INFO] [proxy] POST /v1/chat-messages (147 bytes)
+2026-05-10 13:17:26,727 [INFO] [proxy] -> POST http://47.239.24.30:8889/v1/chat-messages
+2026-05-10 13:17:26,728 [INFO] [proxy] query: hello,你好。
+2026-05-10 13:17:26,729 [INFO] [proxy] conversation_id: 85a24457-235f-4392-87c4-39525de6b37c
+2026-05-10 13:17:26,840 [INFO] [proxy] <- 200 streaming=True
+2026-05-10 13:17:28,457 [INFO] [proxy] stream complete
+2026-05-10 13:17:49,020 [INFO] [right] LOADED: https://amr.sz.gov.cn/psout/jsp/gcloud/pubservice/userstsso/godeal.jsp?code=pm02_hvEQLNZxREKXztL3UzdxlA&infoFlowId=69253616301007640593440300&ywlsh=
+2026-05-10 13:17:52,910 [INFO] [right] LOADED: https://amr.sz.gov.cn/xxgk/qt/ztlm/opcfwzq/index.html?f_link_type=f_linkinlinenote&flow_extra=eyJpbmxpbmVfZGlzcGxheV9wb3NpdGlvbiI6MCwiZG9jX3Bvc2l0aW9uIjowLCJkb2NfaWQiOiIxMDUyYmVmZWRkMTFiMjFiLTBiNWJhZjk4ZmYxZmFmMGEifQ%3D%3D
