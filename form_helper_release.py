@@ -127,6 +127,27 @@ class ChatHandler(BaseHTTPRequestHandler):
 
     def _proxy_request(self, method, path, body):
         url = DIFY_BASE_URL + "/" + path
+
+        if "chat-messages" in path:
+            try:
+                data = json.loads(body.decode('utf-8'))
+                query = data.get('query', '')
+                files = data.get('files', [])
+                print(f"\n{'='*60}")
+                print(f"[REQUEST] POST /{path}")
+                print(f"[IMAGE] {'YES - ' + str(len(files)) + ' file(s)' if files else 'NO'}")
+                if files:
+                    print(f"[FILES] {json.dumps(files, ensure_ascii=False)}")
+                print(f"[USER] {data.get('user', '')}")
+                conv_id = data.get('conversation_id', '')
+                if conv_id:
+                    print(f"[CONV] {conv_id}")
+                print(f"{'='*60}")
+                print(query[:500] if len(query) > 500 else query)
+                print(f"{'='*60}\n")
+            except Exception:
+                pass
+
         req = UrllibRequest(url, data=body, method=method)
         req.add_header("Authorization", "Bearer " + DIFY_TOKEN)
 
@@ -158,6 +179,17 @@ class ChatHandler(BaseHTTPRequestHandler):
                     self.wfile.flush()
             else:
                 resp_body = resp.read()
+                if "chat-messages" in path:
+                    try:
+                        resp_json = json.loads(resp_body.decode('utf-8'))
+                        answer = resp_json.get('answer', '')
+                        print(f"\n{'='*60}")
+                        print(f"[RESPONSE] POST /{path}")
+                        print(f"{'='*60}")
+                        print(answer[:1000])
+                        print(f"{'='*60}\n")
+                    except Exception:
+                        pass
                 self.wfile.write(resp_body)
         except URLError as e:
             err_body = ""
@@ -199,6 +231,7 @@ class ChatHandler(BaseHTTPRequestHandler):
             data = json.loads(body.decode('utf-8'))
             fragment_id = data.get('id')
             fragment_title = data.get('title')
+            print(f"\n[LOOKUP] id={fragment_id}, title={fragment_title}")
 
             from fragment_matcher import get_matcher
             matcher = get_matcher()
@@ -206,10 +239,14 @@ class ChatHandler(BaseHTTPRequestHandler):
             fragment = None
             if fragment_id:
                 fragment = matcher.find_by_id(int(fragment_id))
+                print(f"[LOOKUP] find_by_id({fragment_id}) => {'FOUND' if fragment else 'NOT FOUND'}")
             if not fragment and fragment_title:
                 fragment = matcher.find_by_title(fragment_title)
+                print(f"[LOOKUP] find_by_title => {'FOUND' if fragment else 'NOT FOUND'}")
 
             if fragment:
+                ctx = fragment.get('context_text', '')
+                print(f"[LOOKUP] context_text len={len(ctx)}, preview={ctx[:100]}")
                 self.send_response(200)
                 self._send_cors()
                 self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -337,7 +374,7 @@ def init_fragment_matcher():
 def start_server(port):
     try:
         chat_html = load_resource_text("chat.html")
-        ChatHandler.chat_html = chat_html.replace("__DIFY_API_PROXY__", "")
+        ChatHandler.chat_html = chat_html.replace("__DIFY_API_PROXY__", "").replace("__DIFY_USER__", USER_ID).replace("__DIFY_TOKEN__", DIFY_TOKEN)
     except Exception as e:
         ChatHandler.chat_html = f"<html><body><h1>Error: {e}</h1></body></html>"
 

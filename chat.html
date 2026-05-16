@@ -688,12 +688,7 @@ async function sendScreenshotHelp(fileId, dataUrl) {
 
         aiMsg.innerHTML = buildRefCard(frag, reason);
 
-        contextInfo = "\n\n【系统已自动匹配到以下参考信息】\n" +
-          "步骤: " + (frag.step_label || '') + "\n" +
-          "标题: " + (frag.title || '') + "\n" +
-          "所属分类: " + (frag.section || '') + "\n";
-        if (frag.tips) contextInfo += "⚠️ 注意事项: " + frag.tips + "\n";
-        contextInfo += "\n操作说明:\n" + (frag.context_text || '') + "\n";
+        contextInfo = (frag.context_text || '');
       }
     }
 
